@@ -8,7 +8,7 @@ fn main() ->Result<(), Error>
     let mut client = Client::connect("postgresql://postgres:postgres@localhost/library", NoTls)?;
 
     client.batch_execute("
-        CREATE TABLE IF NOT EXISTS dictionary2 (
+        CREATE TABLE IF NOT EXISTS dictionary (
             id              SERIAL PRIMARY KEY,
             name            TEXT NOT NULL UNIQUE,
             page            INT
@@ -54,7 +54,7 @@ fn main() ->Result<(), Error>
 
                 // Insert the data into the database here:
                 client.execute(
-                    "INSERT INTO dictionary2 (name, page) VALUES ($1, $2)",
+                    "INSERT INTO dictionary (name, page) VALUES ($1, $2)",
                     &[&word, &page_no],
                 )?;
             }
@@ -86,13 +86,13 @@ fn main() ->Result<(), Error>
             if searching_word.to_ascii_lowercase().ne(&"q")
             {        
                 // Search here from the database
-                for row in client.query("SELECT id, name, page FROM dictionary2", &[])? 
+                for row in client.query("SELECT id, name, page FROM dictionary", &[])? 
                 {
-                    let word: String = row.get(1);
+                    let mut word: String = row.get(1);
                     let page_number: i32 = row.get(2);
 
                     //remove the newline character from the string.
-                    //word.pop();
+                    word.pop();
 
                     if word.eq(&searching_word)
                     {
@@ -116,7 +116,7 @@ fn main() ->Result<(), Error>
     else if ins_se.to_ascii_lowercase().eq(&"t")
     {
         let mut total_word = 0;
-        for _row in client.query("SELECT id FROM dictionary2", &[])?
+        for _row in client.query("SELECT id FROM dictionary", &[])?
         {
             total_word = 1 + total_word;
         }
