@@ -8,7 +8,7 @@ fn main() ->Result<(), Error>
     let mut client = Client::connect("postgresql://postgres:postgres@localhost/library", NoTls)?;
 
     client.batch_execute("
-        CREATE TABLE IF NOT EXISTS dictionary (
+        CREATE TABLE IF NOT EXISTS corrected_dictionary (
             id              SERIAL PRIMARY KEY,
             name            TEXT NOT NULL UNIQUE,
             page            INT
@@ -34,6 +34,7 @@ fn main() ->Result<(), Error>
     	        .ok()
                 .expect("Failed to read line");
             
+            // Remove the newline character.
             word.pop();
 
             
@@ -54,7 +55,7 @@ fn main() ->Result<(), Error>
 
                 // Insert the data into the database here:
                 client.execute(
-                    "INSERT INTO dictionary (name, page) VALUES ($1, $2)",
+                    "INSERT INTO corrected_dictionary (name, page) VALUES ($1, $2)",
                     &[&word, &page_no],
                 )?;
             }
@@ -86,23 +87,20 @@ fn main() ->Result<(), Error>
             if searching_word.to_ascii_lowercase().ne(&"q")
             {        
                 // Search here from the database
-                for row in client.query("SELECT id, name, page FROM dictionary", &[])? 
+                for row in client.query("SELECT id, name, page FROM corrected_dictionary", &[])? 
                 {
-                    let mut word: String = row.get(1);
+                    let word: String = row.get(1);
                     let page_number: i32 = row.get(2);
-
-                    //remove the newline character from the string.
-                    word.pop();
 
                     if word.eq(&searching_word)
                     {
-                        println!("Found the word: {}, page number: {}",word, page_number);
+                        println!("Found the word: '{}', page number: {}",word, page_number);
                         found = true;
                     }
                 }
                 if found == false
                 {
-                    println!("{} is not found", searching_word);
+                    println!("'{}' is not found", searching_word);
                 }
              
             }
@@ -116,7 +114,7 @@ fn main() ->Result<(), Error>
     else if ins_se.to_ascii_lowercase().eq(&"t")
     {
         let mut total_word = 0;
-        for _row in client.query("SELECT id FROM dictionary", &[])?
+        for _row in client.query("SELECT id FROM corrected_dictionary", &[])?
         {
             total_word = 1 + total_word;
         }
